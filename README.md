@@ -16,21 +16,21 @@ The messages are on the format:
 ```
 $CUSTRAJ,WP1_TIME,WP1_LAT,WP1_LON,WP1_HEADING,WP1_ACTUATOR1,WP1_ACTUATOR2,...;WP2_TIME,WP2_LAT,WP2_LON,WP2_HEADING,WP2_ACTUATOR1,WP2_ACTUATOR2,...;...*checksum
 ```
-%% Explain the parameters of the message
+
 **WP1_TIME** is the time in UTC seconds since 1970-01-01 00:00:00 at the first waypoint. **WP1_LAT** and **WP1_LON** are the latitude and longitude at the first waypoint. **WP1_HEADING** is the heading of the vessel in radians at the first waypoint. **WP1_ACTUATOR1**, **WP1_ACTUATOR2**, ... are the actuator values at the first waypoint. The same parameters are used for the second waypoint, and so on.
 
 ### Ship state
 ```
 $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG*checksum
 ```
-%% Explain the parameters of the message
+
 **TIME** is the time in UTC seconds since 1970-01-01 00:00:00. **POS_LAT** and **POS_LON** are the latitude and longitude of the vessel. **POS_HEADING** is the heading of the vessel in radians. **POS_COG** is the course over ground of the vessel in radians. **POS_SOG** is the speed over ground of the vessel in m/s.
 
 ### Wind state
 ```
 $CUSWIND,TIME,WIND_SPEED,WIND_DIRECTION*checksum
 ```
-%% Explain the parameters of the message
+
 **TIME** is the time in UTC seconds since 1970-01-01 00:00:00. **WIND_SPEED** is the wind speed in m/s. **WIND_DIRECTION** is the wind direction in radians.
 
 All angular directions are in radians with 0 being north, pi/2 being east, pi/-pi being south, and -pi/2 being west.
