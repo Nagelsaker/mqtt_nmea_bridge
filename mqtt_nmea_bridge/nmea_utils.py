@@ -13,30 +13,258 @@
 #
 # --------------------------------------------------------------------------------
 #
+from . import Trajectory, ShipState, WindState
+import warnings
 
-# TODO: These functions are placeholders.
+# *************************************************************************************************
+# Helper functions for parsing NMEA0183 messages
+# *************************************************************************************************
 
-def to_cust_traj(trajectory):
-    # Convert a Python list of dictionaries representing a trajectory to a custom NMEA string
-    waypoints = []
-    for wp in trajectory:
-        wp_str = f"{wp['lat']},{wp['lon']},{wp['heading']},{wp['actuator']},{wp['time']}"
-        waypoints.append(wp_str)
-    nmea_message = f"$CUSTRAJ,{';'.join(waypoints)}*checksum"
-    return nmea_message
+def _calculate_checksum(sentence):
+    checksum = 0
+    for char in sentence:
+        checksum ^= ord(char)
+    return checksum
 
-def from_cust_traj(nmea_message):
-    # Convert a custom NMEA string to a Python list of dictionaries representing a trajectory
-    parts = nmea_message.split(',')
-    if parts[0] != "$CUSTRAJ":
-        return None  # Invalid message type
-    waypoints = parts[1].split(';')
-    trajectory = []
-    for wp_str in waypoints:
-        lat, lon, heading, actuator, time = wp_str.split(',')
-        wp = {'lat': lat, 'lon': lon, 'heading': heading, 'actuator': actuator, 'time': time}
-        trajectory.append(wp)
+def _parse_nmea_message(nmea_message):
+    '''
+    Parses an NMEA0183 message and returns the message type, body, and checksum.
+    Verifies the checksum and issues a warning if it doesn't match.
+
+    --------------------------------------------------------------------
+    Input:
+        nmea_message (str): The raw NMEA0183 message string.
+
+    Output:
+        tuple: message_type (str), message_body (str), checksum (str)
+    --------------------------------------------------------------------
+    '''
+    # Split the message into its components
+    try:
+        msg_start, msg_end = nmea_message.split('*')
+        message_type, message_body = msg_start[1:].split(',', 1)
+    except ValueError:
+        warnings.warn(f"Invalid NMEA0183 message format for the message:\n'{nmea_message}'")
+        return None, None, None
+
+    # Extract the checksum from the message
+    checksum = msg_end
+
+    # Calculate the checksum of the message content
+    calculated_checksum = format(_calculate_checksum(msg_start[1:]), 'X').zfill(2)
+
+    # Verify the checksum
+    if calculated_checksum != checksum:
+        warnings.warn(f"Checksum mismatch: calculated {calculated_checksum}, received {checksum}")
+
+    return message_type, message_body, checksum
+
+# \************************************************************************************************
+
+# *************************************************************************************************
+# * Functions to convert custom NMEA0183 messages to data objects
+# *************************************************************************************************
+
+def from_nmea_cust_traj(nmea_message):
+    '''
+    Converts the custom NMEA0183 message $CUSTRAJ to a Trajectory object.
+
+    Expected NMEA message format:
+    $CUSTRAJ,WP1_TIME,WP1_LAT,WP1_LON,WP1_HEADING,WP1_ACTUATOR1,WP1_ACTUATOR2,...;WP2_TIME,WP2_LAT,WP2_LON,WP2_HEADING,WP2_ACTUATOR1,WP2_ACTUATOR2,...;...*checksum
+
+    --------------------------------------------------------------------
+    Input:
+        nmea_message (str): The raw NMEA0183 message string.
+    Output:
+        trajectory (Trajectory): The Trajectory object.
+    --------------------------------------------------------------------
+    '''
+    msg_type, msg_body, checksum = _parse_nmea_message(nmea_message)
+    if msg_type != 'CUSTRAJ':
+        warnings.warn(f"Expected message type 'CUSTRAJ', got '{msg_type}'")
+        return None
+    waypoints = msg_body.split(';')
+    timestamps = []
+    latitudes = []
+    longitudes = []
+    headings = []
+    actuator_values = []
+    nr_of_actuators = None
+    for waypoint in waypoints:
+        timestamp, latitude, longitude, heading, *actuator_value = waypoint.split(',')
+        timestamps.append(float(timestamp))
+        latitudes.append(float(latitude))
+        longitudes.append(float(longitude))
+        headings.append(float(heading))
+        
+        if len(actuator_value) == 1:
+            if nr_of_actuators is None or nr_of_actuators == 1:
+                nr_of_actuators = 1
+                actuator_values.append(float(actuator_value[0]))
+            else:
+                warnings.warn(f"Expected {nr_of_actuators} actuator values, got 1.")
+                return None
+        else:
+            if nr_of_actuators is None or nr_of_actuators == len(actuator_value):
+                nr_of_actuators = len(actuator_value)
+                actuator_values.append(float(actuator_value))
+            else:
+                warnings.warn(f"Expected {nr_of_actuators} actuator values, got {len(actuator_value)}.")
+                return None
+            
+    trajectory = Trajectory(
+        timestamps=timestamps,
+        latitudes=latitudes,
+        longitudes=longitudes,
+        headings=headings,
+        actuator_values=actuator_values,
+        nr_of_actuators=nr_of_actuators
+    )
     return trajectory
 
-def to_cust_ship_state(ship_state):
-    pass
+
+def from_nmea_cust_ship_state(nmea_message):
+    '''
+    Conerts the custom NMEA0183 message $CUSSTATE to a ShipState object.
+
+    Expected NMEA message format:
+    $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG*checksum
+
+    --------------------------------------------------------------------
+    Input:
+        nmea_message (str): The raw NMEA0183 message string.
+    Output:
+        ship_state (ShipState): The ShipState object.
+    --------------------------------------------------------------------
+    '''
+    msg_type, msg_body, checksum = _parse_nmea_message(nmea_message)
+    if msg_type != 'CUSSTATE':
+        warnings.warn(f"Expected message type 'CUSSTATE', got '{msg_type}'")
+        return None
+
+    # Split the message body into its components
+    time, latitude, longitude, heading, COG, SOG = msg_body.split(',')
+
+    # Create a ShipState object
+    ship_state = ShipState(
+        time=float(time),
+        latitude=float(latitude),
+        longitude=float(longitude),
+        heading=float(heading),
+        COG=float(COG),
+        SOG=float(SOG)
+    )
+    
+    return ship_state
+
+
+def from_nmea_cust_wind_state(nmea_message):
+    '''
+    Converts the custom NMEA0183 message $CUSWIND to a WindState object.
+
+    Expected NMEA message format:
+    $CUSWIND,TIME,WIND_SPEED,WIND_DIRECTION*checksum
+
+    --------------------------------------------------------------------
+    Input:
+        nmea_message (str): The raw NMEA0183 message string.
+    Output:
+        wind_state (WindState): The WindState object.
+    --------------------------------------------------------------------
+    '''
+    msg_type, msg_body, checksum = _parse_nmea_message(nmea_message)
+    if msg_type != 'CUSWIND':
+        warnings.warn(f"Expected message type 'CUSWIND', got '{msg_type}'")
+        return None
+
+    # Split the message body into its components
+    time, wind_speed, wind_direction = msg_body.split(',')
+
+    # Create a WindState object
+    wind_state = WindState(
+        time=float(time),
+        direction=float(wind_direction),
+        speed=float(wind_speed)
+    )
+    
+    return wind_state
+
+# \************************************************************************************************
+
+# *************************************************************************************************
+# Functions to convert data objects to custom NMEA0183 messages
+# *************************************************************************************************
+
+def to_nmea_cust_traj(trajectory):
+    '''
+    Converts a Trajectory object to a custom NMEA0183 message.
+    
+    Outputted message format:
+    $CUSTRAJ,WP1_TIME,WP1_LAT,WP1_LON,WP1_HEADING,WP1_ACTUATOR1,WP1_ACTUATOR2,...;WP2_TIME,WP2_LAT,WP2_LON,WP2_HEADING,WP2_ACTUATOR1,WP2_ACTUATOR2,...;...*checksum
+
+    --------------------------------------------------------------------
+    Input:
+        trajectory (Trajectory): The Trajectory object.
+    Output:
+        nmea_msg (str): The custom, CUSTRAJ, NMEA0183 message.
+    --------------------------------------------------------------------
+    '''
+    waypoints = []
+    for i in range(len(trajectory._nr_of_waypoints)):
+        waypoint = [
+            str(trajectory.timestamps[i]),
+            str(trajectory.latitudes[i]),
+            str(trajectory.longitudes[i]),
+            str(trajectory.headings[i]),
+            str(trajectory.actuator_values[i])
+        ]
+        waypoints.append(','.join(waypoint))
+    sentence_body = ';'.join(waypoints)
+    sentence = f"$CUSTRAJ,{sentence_body}"
+    checksum = _calculate_checksum(sentence[1:])
+    nmea_msg = f"{sentence}*{checksum:02X}"
+    return nmea_msg
+
+
+def to_nmea_cust_ship_state(ship_state):
+    '''
+    Converts a ShipState object to a custom NMEA0183 message.
+
+    Outputted message format:
+    $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG*checksum
+
+    --------------------------------------------------------------------
+    Input:
+        ship_state (ShipState): The ShipState object.
+    Output:
+        nmwa_msg (str): The custom, CUSSTATE, NMEA0183 message.
+    --------------------------------------------------------------------
+    '''
+    sentence_body = f"{ship_state.time},{ship_state.latitude},{ship_state.longitude},{ship_state.heading},{ship_state.COG},{ship_state.SOG}"
+    sentence = f"$CUSSTATE,{sentence_body}"
+    checksum = _calculate_checksum(sentence[1:])
+    nmea_msg = f"{sentence}*{checksum:02X}"
+    return nmea_msg
+
+
+def to_nmea_cust_wind_state(wind_state):
+    '''
+    Converts a WindState object to a custom NMEA0183 message.
+
+    Outputted message format:
+    $CUSWIND,TIME,WIND_SPEED,WIND_DIRECTION*checksum
+
+    --------------------------------------------------------------------
+    Input:
+        wind_state (WindState): The WindState object.
+    Output:
+        nmwa_msg (str): The custom, CUSWIND, NMEA0183 message.
+    --------------------------------------------------------------------
+    '''
+    sentence_body = f"{wind_state.time},{wind_state.speed},{wind_state.direction}"
+    sentence = f"$CUSWIND,{sentence_body}"
+    checksum = _calculate_checksum(sentence[1:])
+    nmea_msg = f"{sentence}*{checksum:02X}"
+    return nmea_msg
+
+# \************************************************************************************************

@@ -8,21 +8,27 @@ class Trajectory:
     The trajectory consists of a list of latitudes, a list of longitudes, a list of actuator values, and a list of timestamps.
     All lists must be of equal length.
 
-    latitudes: list of floats
-    longitudes: list of floats
-    actuator_values: list of floats or list of lists of floats
-    timestamps: list of floats in UTC seconds since 1970-01-01 00:00:00
-    nr_of_actuators: int
+    --------------------------------------------------------------------
+    Parameters:
+
+    timestamps (lst of floats):  In UTC seconds since 1970-01-01 00:00:00
+    latitudes (lst of floats)
+    longitudes (lst of floats)
+    headings (lst of floats): In radians
+    actuator_values (lst of floats / lst of lsts of floats)
+    nr_of_actuators (int)
+    --------------------------------------------------------------------
     '''
+    timestamps: list
     latitudes: list
     longitudes: list
+    headings: list
     actuator_values: list
-    timestamps: list
     nr_of_actuators: int
     _nr_of_waypoints: int = len(latitudes)
 
     def __post_init__(self):
-        lengths = {len(self.latitudes), len(self.longitudes), len(self.actuator_values), len(self.timestamps)}
+        lengths = {len(self.timestamps), len(self.latitudes), len(self.longitudes), len(self.headings), len(self.actuator_values)}
         if len(lengths) > 1:
             raise ValueError("All lists must be of equal length.")
         
@@ -49,19 +55,23 @@ class ShipState:
     '''
     Dataclass for representing the state of a ship.
 
-    latitude: float
-    longitude: float
-    heading: float in radians
-    COG: float in radians
-    SOG: float in m/s
-    time: float in UTC seconds since 1970-01-01 00:00:00
+    --------------------------------------------------------------------
+    Parameters:
+
+    latitude (float)
+    longitude (float)
+    heading (float): In radians
+    COG (float): In radians
+    SOG (float): In m/s
+    time (float): In UTC seconds since 1970-01-01 00:00:00
+    --------------------------------------------------------------------
     '''
+    time: float
     latitude: float
     longitude: float
     heading: float
     COG: float
     SOG: float
-    time: float
 
 
 @dataclass
@@ -69,10 +79,14 @@ class WindState:
     '''
     Dataclass for representing the state of the wind.
 
+    --------------------------------------------------------------------
+    Parameters:
+
     direction: float in radians
     speed: float in m/s
     time: float in UTC seconds since 1970-01-01 00:00:00
+    --------------------------------------------------------------------
     '''
+    time: float
     direction: float
     speed: float
-    time: float
