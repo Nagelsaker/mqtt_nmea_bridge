@@ -14,8 +14,7 @@
 # --------------------------------------------------------------------------------
 #
 import paho.mqtt.client as mqtt
-from . import to_nmea_cust_traj, to_nmea_cust_ship_state, to_nmea_cust_wind_state
-from . import Trajectory, ShipState, WindState
+import mqtt_nmea_bridge as mnb
 
 
 class Publisher:
@@ -35,11 +34,21 @@ class Publisher:
         self.broker = broker
         self.port = port
 
-    def connect(self):
+    def connect(self, username, password):
+        self.client.username_pw_set(f"{username}", f"{password}")
         self.client.connect(self.broker, self.port)
 
     def on_connect(self, client, userdata, flags, rc):
-        print(f"Connected with result code {rc}")
+        if rc == 0:
+            print("Connected successfully.")
+        else:
+            print(f"Connect failed with return code {rc}")
+
+    def loop_start(self):
+        self.client.loop_start()
+
+    def loop_stop(self):
+        self.client.loop_stop()
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload)
@@ -58,10 +67,10 @@ class TrajectoryPublisher(Publisher):
     '''
     def publish(self, trajectory):
         # Check if trajectory is a Trajectory object
-        if not isinstance(trajectory, Trajectory):
+        if not isinstance(trajectory, mnb.Trajectory):
             raise TypeError("trajectory must be a Trajectory object.")
         # Convert trajectory to custom NMEA string
-        nmea_cus_traj = to_nmea_cust_traj(trajectory)
+        nmea_cus_traj = mnb.to_nmea_cust_traj(trajectory)
         self.client.publish("trajectory/topic", nmea_cus_traj)
 
 
@@ -78,10 +87,10 @@ class ShipStatePublisher(Publisher):
     '''
     def publish(self, ship_state):
         # Check if ship_state is a ShipState object
-        if not isinstance(ship_state, ShipState):
+        if not isinstance(ship_state, mnb.ShipState):
             raise TypeError("ship_state must be a ShipState object.")
         # Convert ship_state to custom NMEA string
-        nmea_ship_state = to_nmea_cust_ship_state(ship_state)
+        nmea_ship_state = mnb.to_nmea_cust_ship_state(ship_state)
         self.client.publish("ship_state/topic", nmea_ship_state)
 
 
@@ -98,8 +107,8 @@ class WindStatePublisher(Publisher):
     '''
     def publish(self, wind_state):
         # Check if wind_state is a WindState object
-        if not isinstance(wind_state, WindState):
+        if not isinstance(wind_state, mnb.WindState):
             raise TypeError("wind_state must be a WindState object.")
         # Convert wind_state to custom NMEA string
-        nmea_wind_state = to_nmea_cust_wind_state(wind_state)
+        nmea_wind_state = mnb.to_nmea_cust_wind_state(wind_state)
         self.client.publish("wind_state/topic", nmea_wind_state)

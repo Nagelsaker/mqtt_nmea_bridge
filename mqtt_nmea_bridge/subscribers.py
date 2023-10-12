@@ -14,8 +14,8 @@
 # --------------------------------------------------------------------------------
 #
 import paho.mqtt.client as mqtt
+import mqtt_nmea_bridge as mnb
 from queue import Queue
-from . import from_nmea_cust_traj, from_nmea_cust_ship_state, from_nmea_cust_wind_state
 
 
 class Subscriber:
@@ -35,15 +35,35 @@ class Subscriber:
         self.client.on_message = self.on_message
         self.broker = broker
         self.port = port
+        self.queue = Queue()
 
-    def connect(self):
+    def connect(self, username, password):
+        self.client.username_pw_set(f"{username}", f"{password}")
         self.client.connect(self.broker, self.port)
 
     def on_connect(self, client, userdata, flags, rc):
-        print(f"Connected with result code {rc}")
+        if rc == 0:
+            print("Connected successfully.")
+        else:
+            print(f"Connect failed with return code {rc}")
 
     def on_message(self, client, userdata, msg):
         print(f"Received message '{msg.payload.decode()}' on topic '{msg.topic}'")
+        
+    def loop_start(self):
+        self.client.loop_start()
+    
+    def loop_stop(self):
+        self.client.loop_stop()
+    
+    def get(self):
+        '''
+        Return a dataclass object from the queue, if any is present, return 0 otherwise.
+        '''
+        if not self.queue.empty():
+            return self.queue.get()
+        else:
+            return 0
 
 
 class TrajectorySubscriber(Subscriber):
@@ -57,15 +77,18 @@ class TrajectorySubscriber(Subscriber):
         port (int): The port number of the MQTT broker.
     --------------------------------------------------------------------
     '''
-    def __init__(self, client_id, broker, port):
-        super().__init__(client_id, broker, port)
-        self.trajectory_queue = Queue()
+    def on_connect(self, client, userdata, flags, rc):
+        topic = "trajectory/topic"
+        super().on_connect(client, userdata, flags, rc)
+        if rc == 0:
+            client.subscribe(topic)
+            print(f"Subscribed to topic '{topic}'")
 
     def on_message(self, client, userdata, msg):
         # Convert NMEA string to Trajectory object
         nmea_cus_traj = msg.payload.decode()
-        trajectory = from_nmea_cust_traj(nmea_cus_traj)
-        self.trajectory_queue.put(trajectory)
+        trajectory = mnb.from_nmea_cust_traj(nmea_cus_traj)
+        self.queue.put(trajectory)
 
 
 class ShipStateSubscriber(Subscriber):
@@ -79,15 +102,18 @@ class ShipStateSubscriber(Subscriber):
         port (int): The port number of the MQTT broker.
     --------------------------------------------------------------------
     '''
-    def __init__(self, client_id, broker, port):
-        super().__init__(client_id, broker, port)
-        self.ship_state_queue = Queue()
+    def on_connect(self, client, userdata, flags, rc):
+        topic = "ship_state/topic"
+        super().on_connect(client, userdata, flags, rc)
+        if rc == 0:
+            client.subscribe(topic)
+            print(f"Subscribed to topic '{topic}'")
 
     def on_message(self, client, userdata, msg):
         # Convert NMEA string to ShipState object
         nmea_ship_state = msg.payload.decode()
-        ship_state = from_nmea_cust_ship_state(nmea_ship_state)
-        self.ship_state_queue.put(ship_state)
+        ship_state = mnb.from_nmea_cust_ship_state(nmea_ship_state)
+        self.queue.put(ship_state)
 
 
 class WindStateSubscriber(Subscriber):
@@ -101,12 +127,15 @@ class WindStateSubscriber(Subscriber):
         port (int): The port number of the MQTT broker.
     --------------------------------------------------------------------
     '''
-    def __init__(self, client_id, broker, port):
-        super().__init__(client_id, broker, port)
-        self.wind_state_queue = Queue()
-    
+    def on_connect(self, client, userdata, flags, rc):
+        topic = "wind_state/topic"
+        super().on_connect(client, userdata, flags, rc)
+        if rc == 0:
+            client.subscribe(topic)
+            print(f"Subscribed to topic '{topic}'")
+            
     def on_message(self, client, userdata, msg):
         # Convert NMEA string to WindState object
         nmea_wind_state = msg.payload.decode()
-        wind_state = from_nmea_cust_wind_state(nmea_wind_state)
-        self.wind_state_queue.put(wind_state)
+        wind_state = mnb.from_nmea_cust_wind_state(nmea_wind_state)
+        self.queue.put(wind_state)

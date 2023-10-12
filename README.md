@@ -21,10 +21,10 @@ $CUSTRAJ,WP1_TIME,WP1_LAT,WP1_LON,WP1_HEADING,WP1_ACTUATOR1,WP1_ACTUATOR2,...;WP
 
 ### Ship state
 ```
-$CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG*checksum
+$CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG,ACTUATOR1,ACTUATOR2,...*checksum
 ```
 
-**TIME** is the time in UTC seconds since 1970-01-01 00:00:00. **POS_LAT** and **POS_LON** are the latitude and longitude of the vessel. **POS_HEADING** is the heading of the vessel in radians. **POS_COG** is the course over ground of the vessel in radians. **POS_SOG** is the speed over ground of the vessel in m/s.
+**TIME** is the time in UTC seconds since 1970-01-01 00:00:00. **POS_LAT** and **POS_LON** are the latitude and longitude of the vessel. **POS_HEADING** is the heading of the vessel in radians. **POS_COG** is the course over ground of the vessel in radians. **POS_SOG** is the speed over ground of the vessel in m/s. **WP1_ACTUATOR1**, **WP1_ACTUATOR2**, ... are the actuator values at the given time.
 
 ### Wind state
 ```
@@ -36,44 +36,32 @@ $CUSWIND,TIME,WIND_SPEED,WIND_DIRECTION*checksum
 All angular directions are in radians with 0 being north, pi/2 being east, pi/-pi being south, and -pi/2 being west.
 
 ## Usage
-The module can be run in a Python script.
+The module can be run in a Python script. Please look at the example files in the examples folder for more information.
+The examples work with the local Eclipse Mosquitto broker. 
 
-### Publishing messages
-The following example shows how to publish a trajectory message to the MQTT broker at localhost.
-```python
-import mqtt_nmea_bridge as mnb
-
-# Create a trajectory message
-# TODO: Add example
+To install the broker on Ubuntu v22.04, run:
+```shell
+sudo apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+sudo apt-get update
+sudo apt-get install mosquitto mosquitto-clients
+sudo apt clean
 ```
 
-The following example shows how to publish a ship state message to the MQTT broker at localhost.
-```python
-import mqtt_nmea_bridge as mnb
-# TODO: Add example
+Setup the WebUI Manager by running:
+```shell
+docker run -it -v ~/cedalo_platform:/cedalo cedalo/installer:2-linux
+```
+Select the preconfigured option and install.
+
+The broker can now be started by running:
+```shell
+cd ~/cedalo_platform
+sh start.sh
 ```
 
-The following example shows how to publish a wind state message to the MQTT broker at localhost.
-```python
-import mqtt_nmea_bridge as mnb
-# TODO: Add example
-```
+The WebUI Manager can be accessed at http://localhost:8080
+With the default credentials, username: cedalo, password: mmcisawesome
 
-### Subscribing to messages
-The following example shows how to subscribe to a trajectory message from the MQTT broker at localhost.
-```python
-import mqtt_nmea_bridge as mnb
-# TODO: Add example
-```
+Make sure to setup clients for the publishers and subscribers. This can be done by clicking on the "Clients" tab in the WebUI Manager. With the credentials used in the examples properly set up, the WebUI Manager should look like this:
 
-The following example shows how to subscribe to a ship state message from the MQTT broker at localhost.
-```python
-import mqtt_nmea_bridge as mnb
-# TODO: Add example
-```
-
-The following example shows how to subscribe to a wind state message from the MQTT broker at localhost.
-```python
-import mqtt_nmea_bridge as mnb
-# TODO: Add example
-```
+![Alt text](figures/WebUI_credentials.png)

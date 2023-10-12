@@ -1,3 +1,18 @@
+# MIT License
+# Copyright (c) 2023 Simon J. N. Lexau
+#
+# --------------------------------------------------------------------------------
+#
+# Norwegian University of Science and Technology (NTNU)
+# Department of Engineering Cybernetics
+# Author: Simon J. N. Lexau
+#
+# --------------------------------------------------------------------------------
+#
+# See the LICENSE file in the project root for full license information.
+#
+# --------------------------------------------------------------------------------
+#
 from dataclasses import dataclass
 
 
@@ -15,7 +30,7 @@ class Trajectory:
     latitudes (lst of floats)
     longitudes (lst of floats)
     headings (lst of floats): In radians
-    actuator_values (lst of floats / lst of lsts of floats)
+    actuator_values (lst of floats / lst of lsts of floats): On the format [[w1_a1, w1_a2, ...], [w2_a1, w2_a2, ...], ...]
     nr_of_actuators (int)
     --------------------------------------------------------------------
     '''
@@ -25,9 +40,9 @@ class Trajectory:
     headings: list
     actuator_values: list
     nr_of_actuators: int
-    _nr_of_waypoints: int = len(latitudes)
 
     def __post_init__(self):
+        self._nr_of_waypoints: int = len(self.latitudes)
         lengths = {len(self.timestamps), len(self.latitudes), len(self.longitudes), len(self.headings), len(self.actuator_values)}
         if len(lengths) > 1:
             raise ValueError("All lists must be of equal length.")
@@ -35,12 +50,13 @@ class Trajectory:
         # Check if actuator_values is a list of lists or a list of floats
         if all(isinstance(val, list) for val in self.actuator_values):
             # actuator_values is a list of lists
-            if len(self.actuator_values) != len(self.nr_of_actuators):
-                raise ValueError("The number of actuators is inconsistent with the list of actuator values.")
+            # Check if the outer list is the same lenght as nr_of_waypoints
+            if len(self.actuator_values) != self._nr_of_waypoints:
+                raise ValueError(f"The outer list of actuator_values must be of length {self._nr_of_waypoints}. Instead got {len(self.actuator_values)}.")
             
-            # Check if all inner lists have the same length as _nr_of_waypoints
-            if any(len(val) != self._nr_of_waypoints for val in self.actuator_values):
-                raise ValueError(f"All inner lists in actuator_values must be of length {self._nr_of_waypoints}. Instead got {[len(val) for val in self.actuator_values]}.")
+            # Check if all inner lists have the same length as nr_of_actuators
+            if any(len(val) != self.nr_of_actuators for val in self.actuator_values):
+                raise ValueError(f"All inner lists of actuator_values must be of length {self.nr_of_actuators}, instead got {[len(val) for val in self.actuator_values]}.")
         else:
             # actuator_values is a list of floats
             if self.nr_of_actuators != 1:
@@ -58,20 +74,24 @@ class ShipState:
     --------------------------------------------------------------------
     Parameters:
 
+    time (float): In UTC seconds since 1970-01-01 00:00:00
     latitude (float)
     longitude (float)
     heading (float): In radians
-    COG (float): In radians
-    SOG (float): In m/s
-    time (float): In UTC seconds since 1970-01-01 00:00:00
+    cog (float): Course Over Ground in radians
+    sog (float): Speed Over Ground in radians n m/s
+    actuator_values (lst of floats / lst of lsts of floats): On the format [a1, a2, ...]
+    nr_of_actuators (int)
     --------------------------------------------------------------------
     '''
     time: float
     latitude: float
     longitude: float
     heading: float
-    COG: float
-    SOG: float
+    cog: float
+    sog: float
+    actuator_values: list
+    nr_of_actuators: int
 
 
 @dataclass
@@ -82,11 +102,11 @@ class WindState:
     --------------------------------------------------------------------
     Parameters:
 
-    direction: float in radians
-    speed: float in m/s
     time: float in UTC seconds since 1970-01-01 00:00:00
+    speed: float in m/s
+    direction: float in radians
     --------------------------------------------------------------------
     '''
     time: float
-    direction: float
     speed: float
+    direction: float

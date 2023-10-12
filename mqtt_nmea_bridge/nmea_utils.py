@@ -13,7 +13,7 @@
 #
 # --------------------------------------------------------------------------------
 #
-from . import Trajectory, ShipState, WindState
+import mqtt_nmea_bridge as mnb
 import warnings
 
 # *************************************************************************************************
@@ -96,6 +96,7 @@ def from_nmea_cust_traj(nmea_message):
         latitudes.append(float(latitude))
         longitudes.append(float(longitude))
         headings.append(float(heading))
+        actuator_value = [float(av) for av in actuator_value]
         
         if len(actuator_value) == 1:
             if nr_of_actuators is None or nr_of_actuators == 1:
@@ -107,12 +108,12 @@ def from_nmea_cust_traj(nmea_message):
         else:
             if nr_of_actuators is None or nr_of_actuators == len(actuator_value):
                 nr_of_actuators = len(actuator_value)
-                actuator_values.append(float(actuator_value))
+                actuator_values.append(actuator_value)
             else:
                 warnings.warn(f"Expected {nr_of_actuators} actuator values, got {len(actuator_value)}.")
                 return None
             
-    trajectory = Trajectory(
+    trajectory = mnb.Trajectory(
         timestamps=timestamps,
         latitudes=latitudes,
         longitudes=longitudes,
@@ -128,7 +129,7 @@ def from_nmea_cust_ship_state(nmea_message):
     Conerts the custom NMEA0183 message $CUSSTATE to a ShipState object.
 
     Expected NMEA message format:
-    $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG*checksum
+    $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG,ACTUATOR1,ACTUATOR2,...*checksum
 
     --------------------------------------------------------------------
     Input:
@@ -143,16 +144,20 @@ def from_nmea_cust_ship_state(nmea_message):
         return None
 
     # Split the message body into its components
-    time, latitude, longitude, heading, COG, SOG = msg_body.split(',')
+    time, latitude, longitude, heading, cog, sog, *actuator_values = msg_body.split(',')
+    actuator_values = [float(av) for av in actuator_values]
+    nr_of_actuators = len(actuator_values)
 
     # Create a ShipState object
-    ship_state = ShipState(
+    ship_state = mnb.ShipState(
         time=float(time),
         latitude=float(latitude),
         longitude=float(longitude),
         heading=float(heading),
-        COG=float(COG),
-        SOG=float(SOG)
+        cog=float(cog),
+        sog=float(sog),
+        actuator_values=actuator_values,
+        nr_of_actuators=nr_of_actuators
     )
     
     return ship_state
@@ -181,10 +186,10 @@ def from_nmea_cust_wind_state(nmea_message):
     time, wind_speed, wind_direction = msg_body.split(',')
 
     # Create a WindState object
-    wind_state = WindState(
+    wind_state = mnb.WindState(
         time=float(time),
-        direction=float(wind_direction),
-        speed=float(wind_speed)
+        speed=float(wind_speed),
+        direction=float(wind_direction)
     )
     
     return wind_state
@@ -210,13 +215,15 @@ def to_nmea_cust_traj(trajectory):
     --------------------------------------------------------------------
     '''
     waypoints = []
-    for i in range(len(trajectory._nr_of_waypoints)):
+    for i in range(trajectory._nr_of_waypoints):
         waypoint = [
             str(trajectory.timestamps[i]),
             str(trajectory.latitudes[i]),
             str(trajectory.longitudes[i]),
-            str(trajectory.headings[i]),
-            str(trajectory.actuator_values[i])
+            str(trajectory.headings[i])
+        ]
+        waypoint += [
+            str(av) for av in trajectory.actuator_values[i]
         ]
         waypoints.append(','.join(waypoint))
     sentence_body = ';'.join(waypoints)
@@ -231,7 +238,7 @@ def to_nmea_cust_ship_state(ship_state):
     Converts a ShipState object to a custom NMEA0183 message.
 
     Outputted message format:
-    $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG*checksum
+    $CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG,ACTUATOR1,ACTUATOR2,...*checksum
 
     --------------------------------------------------------------------
     Input:
@@ -240,7 +247,8 @@ def to_nmea_cust_ship_state(ship_state):
         nmwa_msg (str): The custom, CUSSTATE, NMEA0183 message.
     --------------------------------------------------------------------
     '''
-    sentence_body = f"{ship_state.time},{ship_state.latitude},{ship_state.longitude},{ship_state.heading},{ship_state.COG},{ship_state.SOG}"
+    actuator_values = [str(av) for av in ship_state.actuator_values]
+    sentence_body = f"{ship_state.time},{ship_state.latitude},{ship_state.longitude},{ship_state.heading},{ship_state.cog},{ship_state.sog},{','.join(actuator_values)}"
     sentence = f"$CUSSTATE,{sentence_body}"
     checksum = _calculate_checksum(sentence[1:])
     nmea_msg = f"{sentence}*{checksum:02X}"
