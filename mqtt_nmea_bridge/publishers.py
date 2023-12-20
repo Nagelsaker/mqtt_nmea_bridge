@@ -70,8 +70,8 @@ class TrajectoryPublisher(Publisher):
         if not isinstance(trajectory, mnb.Trajectory):
             raise TypeError("trajectory must be a Trajectory object.")
         # Convert trajectory to custom NMEA string
-        nmea_cus_traj = mnb.to_nmea_cust_traj(trajectory)
-        self.client.publish("trajectory/topic", nmea_cus_traj)
+        mqtt_str = mnb.from_traj_to_mqtt_str(trajectory)
+        self.client.publish("trajectory/topic", mqtt_str)
 
 
 class ShipStatePublisher(Publisher):
@@ -90,8 +90,8 @@ class ShipStatePublisher(Publisher):
         if not isinstance(ship_state, mnb.ShipState):
             raise TypeError("ship_state must be a ShipState object.")
         # Convert ship_state to custom NMEA string
-        nmea_ship_state = mnb.to_nmea_cust_ship_state(ship_state)
-        self.client.publish("ship_state/topic", nmea_ship_state)
+        mqtt_str = mnb.from_shipstate_to_mqtt_str(ship_state)
+        self.client.publish("ship_state/topic", mqtt_str)
 
 
 class WindStatePublisher(Publisher):
@@ -110,5 +110,5 @@ class WindStatePublisher(Publisher):
         if not isinstance(wind_state, mnb.WindState):
             raise TypeError("wind_state must be a WindState object.")
         # Convert wind_state to custom NMEA string
-        nmea_wind_state = mnb.to_nmea_cust_wind_state(wind_state)
-        self.client.publish("wind_state/topic", nmea_wind_state)
+        mqtt_str = mnb.from_windstate_to_mqtt_str(wind_state)
+        self.client.publish("wind_state/topic", mqtt_str)

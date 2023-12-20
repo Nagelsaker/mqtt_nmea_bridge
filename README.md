@@ -1,5 +1,5 @@
 # mqtt_nmea_bridge
-MQTT-NMEA-BRIDGE serves as a data link layer, translating and routing messages via MQTT while adhering to custom NMEA0183 message formats. The module aims to synchronize real-time vessel data and control commands for autonomous docking operations
+MQTT-NMEA-BRIDGE serves as a data link layer, translating and routing messages via MQTT. Previously custom NMEA0183 messages were used for this purpose, but to improve readability, the message strings have now been changed to a JSON format. The package name remains unchanged for now, even though it does not really fit anymore. The module aims to synchronize real-time vessel data and control commands for autonomous docking operations.
 
 
 ## Installation
@@ -9,26 +9,79 @@ Clone this repository to any folder. From the same folder, run:
 pip install -e .
 ```
 
-## Custom NMEA0183 messages
-The messages are on the format:
+## Custom MQTT messages
+The messages are on a JSON format:
+
 
 ### Trajectory
-```
-$CUSTRAJ,WP1_TIME,WP1_LAT,WP1_LON,WP1_HEADING,WP1_ACTUATOR1,WP1_ACTUATOR2,...;WP2_TIME,WP2_LAT,WP2_LON,WP2_HEADING,WP2_ACTUATOR1,WP2_ACTUATOR2,...;...*checksum
+```JSON
+{
+        "type": "TRAJ",
+        "body": [
+            {
+                "type": "SHIP_STATE",
+                "body":
+                    {
+                        "time": WP1_TIME,
+                        "latitude": WP1_LAT,
+                        "longitude": WP1_LON,
+                        "heading": WP1_HEADING,
+                        "cog": WP1_COG, # 'None' if not available
+                        "sog": WP1_SOG,
+                        "nr_of_actuators": WP1_NR_OF_ACTUATORS, # Constant for all waypoints
+                        "actuator_values": [WP1_ACTUATOR1, WP1_ACTUATOR2, ...]
+                    }
+            },
+            {
+                "type": "SHIP_STATE",
+                "body":
+                    {
+                        "time": WP2_TIME,
+                        "latitude": WP2_LAT,
+                        "longitude": WP2_LON,
+                        "heading": WP2_HEADING,
+                        "cog": WP1_COG,
+                        "sog": WP2_SOG,
+                        "nr_of_actuators": WP2_NR_OF_ACTUATORS,
+                        "actuator_values": [WP2_ACTUATOR1, WP2_ACTUATOR2, ...]
+                    }
+            },
+            ...
+        ]
+    }
 ```
 
-**WP1_TIME** is the time in UTC seconds since 1970-01-01 00:00:00 at the first waypoint. **WP1_LAT** and **WP1_LON** are the latitude and longitude at the first waypoint. **WP1_HEADING** is the heading of the vessel in radians at the first waypoint. **WP1_ACTUATOR1**, **WP1_ACTUATOR2**, ... are the actuator values at the first waypoint. The same parameters are used for the second waypoint, and so on.
+**WP1_TIME** is the time in UTC seconds since 1970-01-01 00:00:00, at the first waypoint. Alternatively, the time can be relative with respect to **WP1_TIME=0**. **WP1_LAT** and **WP1_LON** are the latitude and longitude at the first waypoint. **WP1_HEADING** is the heading of the vessel in radians at the first waypoint. **WP1_ACTUATOR1**, **WP1_ACTUATOR2**, ... are the actuator values at the first waypoint. The same parameters are used for the second waypoint, and so on.
 
 ### Ship state
-```
-$CUSSTATE,TIME,POS_LAT,POS_LON,POS_HEADING,POS_COG,POS_SOG,ACTUATOR1,ACTUATOR2,...*checksum
+```JSON
+    {
+        "type": "SHIP_STATE",
+        "body": {
+            "time": TIME,
+            "latitude": LAT,
+            "longitude": LON,
+            "heading": HEADING,
+            "cog": COG, # 'None' if not available
+            "sog": SOG,
+            "nr_of_actuators": NR_OF_ACTUATORS,
+            "actuator_values": [ACTUATOR1, ACTUATOR2, ...]
+        }
+    }
 ```
 
 **TIME** is the time in UTC seconds since 1970-01-01 00:00:00. **POS_LAT** and **POS_LON** are the latitude and longitude of the vessel. **POS_HEADING** is the heading of the vessel in radians. **POS_COG** is the course over ground of the vessel in radians. **POS_SOG** is the speed over ground of the vessel in m/s. **WP1_ACTUATOR1**, **WP1_ACTUATOR2**, ... are the actuator values at the given time.
 
 ### Wind state
-```
-$CUSWIND,TIME,WIND_SPEED,WIND_DIRECTION*checksum
+```JSON
+    {
+        "type": "WIND_STATE",
+        "body": {
+            "time": TIME,
+            "speed": SPEED,
+            "direction": DIRECTION
+        }
+    }
 ```
 
 **TIME** is the time in UTC seconds since 1970-01-01 00:00:00. **WIND_SPEED** is the wind speed in m/s. **WIND_DIRECTION** is the wind direction in radians.

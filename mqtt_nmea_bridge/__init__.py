@@ -13,8 +13,8 @@
 #
 # --------------------------------------------------------------------------------
 #
-from mqtt_nmea_bridge.nmea_utils import to_nmea_cust_traj, to_nmea_cust_ship_state, to_nmea_cust_wind_state
-from mqtt_nmea_bridge.nmea_utils import from_nmea_cust_traj, from_nmea_cust_ship_state, from_nmea_cust_wind_state
+from mqtt_nmea_bridge.mqtt_str_utils import from_mqtt_str_to_shipstate, from_mqtt_str_to_traj, from_mqtt_str_to_windstate
+from mqtt_nmea_bridge.mqtt_str_utils import from_shipstate_to_mqtt_str, from_traj_to_mqtt_str, from_windstate_to_mqtt_str
 from mqtt_nmea_bridge.data_objects import Trajectory, ShipState, WindState
 from mqtt_nmea_bridge.subscribers import TrajectorySubscriber, ShipStateSubscriber, WindStateSubscriber
 from mqtt_nmea_bridge.publishers import TrajectoryPublisher, ShipStatePublisher, WindStatePublisher

@@ -86,8 +86,8 @@ class TrajectorySubscriber(Subscriber):
 
     def on_message(self, client, userdata, msg):
         # Convert NMEA string to Trajectory object
-        nmea_cus_traj = msg.payload.decode()
-        trajectory = mnb.from_nmea_cust_traj(nmea_cus_traj)
+        mqtt_str = msg.payload.decode()
+        trajectory = mnb.from_mqtt_str_to_traj(mqtt_str)
         self.queue.put(trajectory)
 
 
@@ -111,8 +111,8 @@ class ShipStateSubscriber(Subscriber):
 
     def on_message(self, client, userdata, msg):
         # Convert NMEA string to ShipState object
-        nmea_ship_state = msg.payload.decode()
-        ship_state = mnb.from_nmea_cust_ship_state(nmea_ship_state)
+        mqtt_str = msg.payload.decode()
+        ship_state = mnb.from_mqtt_str_to_shipstate(mqtt_str)
         self.queue.put(ship_state)
 
 
@@ -136,6 +136,6 @@ class WindStateSubscriber(Subscriber):
             
     def on_message(self, client, userdata, msg):
         # Convert NMEA string to WindState object
-        nmea_wind_state = msg.payload.decode()
-        wind_state = mnb.from_nmea_cust_wind_state(nmea_wind_state)
+        mqtt_str = msg.payload.decode()
+        wind_state = mnb.from_mqtt_str_to_windstate(mqtt_str)
         self.queue.put(wind_state)
