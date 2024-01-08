@@ -14,6 +14,7 @@
 # --------------------------------------------------------------------------------
 #
 import mqtt_nmea_bridge as mnb
+import numpy as np
 import time
 
 
@@ -51,6 +52,25 @@ def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=10, data_pa
     # Load the dataset
     dataset = load_dataset(data_path)
 
+    print("Publishing ship state from dataset...")
+
+    t = 0
+    for data_point in dataset:
+        # Publish the ship state
+        shipState = mnb.ShipState(time=data_point[0],
+                                  latitude=data_point[1][0],
+                                  longitude=data_point[1][1],
+                                  heading=np.rad2deg(data_point[1][2]),
+                                  cog=None,
+                                  sog=np.sqrt(data_point[1][3]**2 + data_point[1][4]**2),
+                                  nr_of_actuators=7,
+                                  actuator_values=[float(data_point[2][0]), float(data_point[2][1]), float(data_point[2][2]), float(data_point[2][3]), float(data_point[2][4]), float(data_point[2][5]), float(data_point[2][6])]
+                                  )
+        ship_state_pub.publish(shipState)
+        # Wait for the next data point
+        time.sleep(interval/simulation_speed)
+        t += interval
+
 
 def load_dataset(path):
     '''
@@ -78,7 +98,11 @@ def load_dataset(path):
         for line in f:
             line = line.strip()
             line = line.split(",")
-            dataset.append(line)
+            time = float(line[0])
+            X = [float(x.replace("\"", "").replace("[", "").replace("]", "")) for x in line[1:7]]
+            U = [float(u.replace("\"", "").replace("[", "").replace("]", "")) for u in line[7:]]
+            dataline = [time, X, U]
+            dataset.append(dataline)
     return dataset
 
 
