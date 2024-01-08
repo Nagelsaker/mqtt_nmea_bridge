@@ -18,7 +18,7 @@ import numpy as np
 import time
 
 
-def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=10, data_path = "example_data/example_docking_trajectory.csv"):
+def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=1, data_path = "example_data/example_docking_trajectory.csv"):
     '''
     Loads a dataset and publishes the ship state from the dataset to an MQTT broker.
 
@@ -54,6 +54,10 @@ def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=10, data_pa
 
     print("Publishing ship state from dataset...")
 
+
+    ship_state_pub.connect(client_id, "password")
+    ship_state_pub.loop_start()
+
     t = 0
     for data_point in dataset:
         # Publish the ship state
@@ -61,7 +65,7 @@ def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=10, data_pa
                                   latitude=data_point[1][0],
                                   longitude=data_point[1][1],
                                   heading=np.rad2deg(data_point[1][2]),
-                                  cog=None,
+                                  cog=np.rad2deg(data_point[1][2]),
                                   sog=np.sqrt(data_point[1][3]**2 + data_point[1][4]**2),
                                   nr_of_actuators=7,
                                   actuator_values=[float(data_point[2][0]), float(data_point[2][1]), float(data_point[2][2]), float(data_point[2][3]), float(data_point[2][4]), float(data_point[2][5]), float(data_point[2][6])]
@@ -108,7 +112,7 @@ def load_dataset(path):
 
 def main():
     interval = 0.5
-    simulation_speed = 10
+    simulation_speed = 1
     ship_state_from_dset_publisher_ex(interval=interval, simulation_speed=simulation_speed)
 
 if __name__ == "__main__":
