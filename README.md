@@ -151,7 +151,7 @@ Where Surge and Sway velocites are given in the BODY frame, and SOG is given in 
 | 1 | Main engine rps |
 | 2 | Main engine pitch |
 | 3 | Rudder angle |
-| 4 | Bow thruster rps |
-| 5 | Bow thruster pitch |
-| 6 | Stern thruster rps |
-| 7 | Stern thruster pitch |
+| 4 | Stern thruster rps |
+| 5 | Stern thruster pitch |
+| 6 | Bow thruster rps |
+| 7 | Bow thruster pitch |
