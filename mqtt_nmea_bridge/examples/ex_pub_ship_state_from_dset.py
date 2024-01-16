@@ -64,11 +64,11 @@ def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=1, data_pat
         shipState = mnb.ShipState(time=data_point[0],
                                   latitude=data_point[1][0],
                                   longitude=data_point[1][1],
-                                  heading=np.rad2deg(data_point[1][2]),
-                                  cog=np.rad2deg(data_point[1][2]),
-                                  sog=np.sqrt(data_point[1][3]**2 + data_point[1][4]**2),
+                                  heading=data_point[1][2],
+                                  cog=data_point[2][0],
+                                  sog=data_point[2][1],
                                   nr_of_actuators=7,
-                                  actuator_values=[float(data_point[2][0]), float(data_point[2][1]), float(data_point[2][2]), float(data_point[2][3]), float(data_point[2][4]), float(data_point[2][5]), float(data_point[2][6])]
+                                  actuator_values=[float(data_point[3][0]), float(data_point[3][1]), float(data_point[3][2]), float(data_point[3][3]), float(data_point[3][4]), float(data_point[3][5]), float(data_point[3][6])]
                                   )
         ship_state_pub.publish(shipState)
         # Wait for the next data point
@@ -104,8 +104,11 @@ def load_dataset(path):
             line = line.split(",")
             time = float(line[0])
             X = [float(x.replace("\"", "").replace("[", "").replace("]", "")) for x in line[1:7]]
-            U = [float(u.replace("\"", "").replace("[", "").replace("]", "")) for u in line[7:]]
-            dataline = [time, X, U]
+            COG = float(line[7].replace("\"", "").replace("[", "").replace("]", ""))
+            SOG = float(line[8].replace("\"", "").replace("[", "").replace("]", ""))
+            CS = [COG, SOG]
+            U = [float(u.replace("\"", "").replace("[", "").replace("]", "")) for u in line[9:]]
+            dataline = [time, X, CS, U]
             dataset.append(dataline)
     return dataset
 
