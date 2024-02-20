@@ -75,17 +75,17 @@ def from_mqtt_str_to_traj(mqtt_str):
         return None
     
     # Check if the message body contains the correct keys
-    if not all(key in msg_body for key in ["type", "body"]):
+    if not all(key in body for body in msg_body for key in ["type", "body"]):
         warnings.warn(f"Expected message body to contain keys 'type' and 'body'.")
         return None
     
-    # Check if the message body contains the correct keys
-    if not all(key in msg_body["body"] for key in ["type", "body"]):
-        warnings.warn(f"Expected message body to contain keys 'type' and 'body'.")
-        return None
+    # # Check if the message body contains the correct keys
+    # if not all(key in msg_body["body"] for key in ["type", "body"]):
+    #     warnings.warn(f"Expected message body to contain keys 'type' and 'body'.")
+    #     return None
     
     # Check if the message body contains the correct keys
-    if not all(key in msg_body["body"]["body"] for key in ["time", "latitude", "longitude", "heading", "cog", "sog", "nr_of_actuators", "actuator_values"]):
+    if not all(key in body["body"] for body in msg_body for key in ["time", "latitude", "longitude", "heading", "cog", "sog", "nr_of_actuators", "actuator_values"]):
         warnings.warn(f"Expected message body to contain keys 'time', 'latitude', 'longitude', 'heading', 'cog', 'sog', 'nr_of_actuators', and 'actuator_values'.")
         return None
     
@@ -102,7 +102,7 @@ def from_mqtt_str_to_traj(mqtt_str):
                 nr_of_actuators=ship_state["nr_of_actuators"],
                 actuator_values=ship_state["actuator_values"]
             )
-            for ship_state in msg_body["body"]["body"]
+            for ship_state in [body["body"] for body in msg_body]
         ]
     )
 

@@ -15,6 +15,7 @@
 #
 import paho.mqtt.client as mqtt
 import mqtt_nmea_bridge as mnb
+from marhs.utils.helper import suppress_stdout
 
 
 class Publisher:
@@ -40,7 +41,8 @@ class Publisher:
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            print("Connected successfully.")
+            # print("Connected successfully.")
+            pass
         else:
             print(f"Connect failed with return code {rc}")
 
@@ -49,6 +51,7 @@ class Publisher:
 
     def loop_stop(self):
         self.client.loop_stop()
+        self.client.disconnect()
 
     def publish(self, topic, payload):
         self.client.publish(topic, payload)

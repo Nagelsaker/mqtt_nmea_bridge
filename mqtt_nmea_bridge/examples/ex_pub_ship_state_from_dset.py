@@ -22,8 +22,7 @@ def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=1, data_pat
     '''
     Loads a dataset and publishes the ship state from the dataset to an MQTT broker.
 
-    Note, the data is should be taken with a grain of salt, and does not represent
-    an energy-efficient and safe docking trajectory. The data is only used for demonstration purposes.
+    The data is only intended for demonstration purposes.
 
     The dataset is a CSV file located in 'example_data/example_docking_trajectory.csv', and contains the following columns:
     - timestamp: Time in seconds since the start of the trajectory
@@ -31,6 +30,7 @@ def ship_state_from_dset_publisher_ex(interval=0.5, simulation_speed=1, data_pat
     - U: Actuator values vector given in percentages of maximum actuator value
 
     X = [latitude, longitude, heading, surge_velocity, sway_velocity, yaw_rate]
+    CS = [Course over ground, Speed over ground]
     U = [main_propeller_speed, main_propeller_pitch, rudder_angle, stern_thruster_speed, stern_thruster_pitch, bow_thruster_speed, bow_thruster_pitch]
 
     The interval between each data point is 0.5 seconds, and the trajectory is over 41 minutes long.
@@ -83,6 +83,7 @@ def load_dataset(path):
     Columns:
     - timestamp: Time in seconds since the start of the trajectory
     - X: Ship state vector
+    - CS: Course over ground and speed over ground
     - U: Actuator values vector given in percentages of maximum actuator value
 
     --------------------------------------------------------------------
