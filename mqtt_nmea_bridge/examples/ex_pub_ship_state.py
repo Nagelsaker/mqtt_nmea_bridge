@@ -68,10 +68,11 @@ def ship_state_publisher_ex():
     ship_state_pub.loop_start()
     t = 120
     # while t > 0:
-    while True:
-        time.sleep(1)
-        ship_state_pub.publish(example_ship_state)
-        t -= 1
+    ship_state_pub.publish(example_ship_state)
+    t -= 1
+
+    # Exit
+    ship_state_pub.loop_stop()
 
 def main():
     ship_state_publisher_ex()
