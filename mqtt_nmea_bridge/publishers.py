@@ -15,7 +15,7 @@
 #
 import paho.mqtt.client as mqtt
 import mqtt_nmea_bridge as mnb
-from marhs.utils.helper import suppress_stdout
+# from marhs.utils.helper import suppress_stdout
 
 
 class Publisher:

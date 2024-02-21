@@ -25,13 +25,16 @@ def ship_state_publisher_ex():
     ship_state_pub = mnb.ShipStatePublisher(client_id, ip, port)
 
     # Timestamp in UTC seconds since 1970-01-01 00:00:00
+    #  Northing=5683020.00, Easting=587730.00
     timestamp = 1633027200
 
     # Latitude in decimal degrees
-    latitude = 63.446827
+    # latitude = 63.446827
+    latitude = 51.29174
 
     # Longitude in decimal degrees
-    longitude = 10.421905
+    # longitude = 10.421905
+    longitude = 4.258185
 
     # Heading in radians
     heading = 0.7854
@@ -64,7 +67,8 @@ def ship_state_publisher_ex():
     ship_state_pub.connect(client_id, "password")
     ship_state_pub.loop_start()
     t = 120
-    while t > 0:
+    # while t > 0:
+    while True:
         time.sleep(1)
         ship_state_pub.publish(example_ship_state)
         t -= 1
