@@ -47,7 +47,7 @@ def ship_state_publisher_ex():
 
     # Actuator values (could be throttle, rudder angle, etc.)
     # Here, assuming 2 actuators for simplicity
-    actuator_values = [0.5, 0.2]
+    actuator_values = [0, 0, 0, 0, 0, 0, 0]
 
     # Number of actuators
     nr_of_actuators = 2
