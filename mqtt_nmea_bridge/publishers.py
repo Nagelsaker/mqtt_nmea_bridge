@@ -41,7 +41,7 @@ class Publisher:
 
     def on_connect(self, client, userdata, flags, rc):
         if rc == 0:
-            # print("Connected successfully.")
+            print("Connected successfully.")
             pass
         else:
             print(f"Connect failed with return code {rc}")
