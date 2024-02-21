@@ -43,9 +43,10 @@ def wind_state_publisher_ex():
     wind_state_pub.connect(client_id, "password")
     wind_state_pub.loop_start()
     t = 120
-    # while t > 0:
-    wind_state_pub.publish(example_wind_state)
-    t -= 1
+    while t > 0:
+        time.sleep(1)
+        wind_state_pub.publish(example_wind_state)
+        t -= 1
 
 def main():
     wind_state_publisher_ex()
