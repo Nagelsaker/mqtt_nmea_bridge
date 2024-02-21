@@ -30,8 +30,8 @@ def wind_state_publisher_ex():
     # Wind speed in m/s
     wind_speed = 1.0
 
-    # Wind direction in radians
-    wind_direction = 0.7854
+    # Wind direction in degrees
+    wind_direction = -125
 
     # Create the WindState object
     example_wind_state = mnb.WindState(
@@ -43,10 +43,9 @@ def wind_state_publisher_ex():
     wind_state_pub.connect(client_id, "password")
     wind_state_pub.loop_start()
     t = 120
-    while t > 0:
-        time.sleep(1)
-        wind_state_pub.publish(example_wind_state)
-        t -= 1
+    # while t > 0:
+    wind_state_pub.publish(example_wind_state)
+    t -= 1
 
 def main():
     wind_state_publisher_ex()
