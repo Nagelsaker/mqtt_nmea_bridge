@@ -36,8 +36,8 @@ def ship_state_publisher_ex():
     # longitude = 10.421905
     longitude = 4.258185
 
-    # Heading in radians
-    heading = 0.7854
+    # Heading in degrees
+    heading = -150
 
     # Course over ground in radians
     cog = 0.7854
