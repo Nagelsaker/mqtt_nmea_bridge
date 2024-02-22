@@ -20,7 +20,7 @@ import time
 import copy
 import numpy as np
 
-def moving_trajectory_from_dset(time_horizon=300, interval=1, sim_speed=1, remove_uneventful_points=True, percnt_U_change=0.1, data_path="example_data/example_docking_trajectory.csv"):
+def moving_trajectory_from_dset(time_horizon=300, interval=10, sim_speed=10, remove_uneventful_points=True, percnt_U_change=0.1, data_path="example_data/example_docking_trajectory.csv"):
     '''
     Loads a dataset and publishes the trajectory from the dataset to an MQTT broker.
     The current position of the vessel is published every 'interval' seconds, together with a predicted future trajectory 'time_horizon' seconds ahead.
@@ -216,4 +216,9 @@ class MovingTrajectory:
         return len(self._moving_trajectory)
     
 if __name__ == "__main__":
-    moving_trajectory_from_dset()
+    time_horizon=300
+    interval=10
+    sim_speed=10
+    remove_uneventful_points=True
+    percnt_U_change=0.1
+    moving_trajectory_from_dset(time_horizon, interval, sim_speed, remove_uneventful_points, percnt_U_change)
