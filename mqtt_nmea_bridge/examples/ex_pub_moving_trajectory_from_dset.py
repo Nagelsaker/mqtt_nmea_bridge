@@ -78,15 +78,15 @@ def moving_trajectory_from_dset(time_horizon=300, interval=1, sim_speed=1, remov
     trajectory_pub.loop_start()
 
     t = time.time()
-    i = 0
+    i = 1
     while len(moving_trajectory) > 0:
         current_time = time.time()
         if current_time - t >= interval / sim_speed:
             t = current_time
-            current_shipstate = dataset[i]
-            moving_trajectory.update_moving_trajectory(current_shipstate)
             trajectory = moving_trajectory.trajectory
             trajectory_pub.publish(trajectory)
+            current_shipstate = dataset[i]
+            moving_trajectory.update_moving_trajectory(current_shipstate)
             i += 1
 
 
@@ -112,7 +112,8 @@ class MovingTrajectory:
         self._time_horizon = time_horizon
         self._interval = interval
         self._prev_timestamp = self._full_trajectory[0][0]
-        self.update_moving_trajectory(self._prev_timestamp)
+        init_shipstate = self._full_trajectory[0]
+        self.update_moving_trajectory(init_shipstate)
 
     def update_moving_trajectory(self, current_shipstate):
         '''
@@ -135,43 +136,52 @@ class MovingTrajectory:
         # TODO: Implement a more efficient search algorithm
 
         # Find the start index from the full trajectory
-        start_idx_full_traj = np.where(np.array(self._full_trajectory)[:,0] == timestamp)[0]
+        start_idx_full_traj = np.where(np.array(self._full_trajectory, dtype=object)[:,0] == timestamp)[0]
         if len(start_idx_full_traj) == 0:
             start_idx_full_traj = 0
         else:
             start_idx_full_traj = start_idx_full_traj[0]
         # Find the end index from the full trajectory
         end_time = timestamp + self._time_horizon
-        end_horizon_idx = np.where(np.array(self._full_trajectory)[:,0] <= end_time)[0]
+        end_horizon_idx = np.where(np.array(self._full_trajectory, dtype=object)[:,0] >= end_time)[0]
         if len(end_horizon_idx) == 0:
-            end_horizon_idx = -1
+            end_horizon_idx = len(self._full_trajectory)-1
         else:
             end_horizon_idx = end_horizon_idx[0]
+            # if self._full_trajectory[end_horizon_idx][0] - end_time > 10:
+            #     end_horizon_idx -= 1
         
         # Find the start index from the moving trajectory
         if len(self._moving_trajectory) == 0:
             start_idx_moving_traj = -1
         else:
-            start_idx_moving_traj = np.where(np.array(self._moving_trajectory)[:,0] == timestamp)[0]
+            start_idx_moving_traj = np.where(np.array(self._moving_trajectory, dtype=object)[:,0] >= timestamp)[0]
             if len(start_idx_moving_traj) == 0:
                 start_idx_moving_traj = -1
             else:
                 start_idx_moving_traj = start_idx_moving_traj[0]
-                
+
+        # If currrent ShipState already in moving trajectory and only waypoint left
+        if start_idx_moving_traj == 0:
+            self._moving_trajectory = []
         # If the start index from the moving trajectory is not found, create a new moving trajectory
-        if start_idx_moving_traj == -1: # If the current position of the vessel is not in the moving trajectory
-            if end_horizon_idx == -1: # If the entire trajectory shall be published at once (horizon exceeds dataset length)
-                self._moving_trajectory = self._full_trajectory[start_idx_full_traj:]
-            else: # If the horizon is within the dataset length
-                self._moving_trajectory = self._full_trajectory[start_idx_full_traj:end_horizon_idx+1]
+        elif start_idx_moving_traj == -1: # If the current position of the vessel is not in the moving trajectory
+            # if end_horizon_idx == -1: # If the entire trajectory shall be published at once (horizon exceeds dataset length)
+            #     self._moving_trajectory = self._full_trajectory[start_idx_full_traj:]
+            # else: # If the horizon is within the dataset length
+            self._moving_trajectory = self._full_trajectory[start_idx_full_traj:end_horizon_idx+1]
         else: # If the current position of the vessel is in the moving trajectory
             self._moving_trajectory = self._moving_trajectory[start_idx_moving_traj:]
             if len(self._full_trajectory) == 0: # If the full trajectory is empty
                 pass
-            elif end_horizon_idx == -1: # If current position already in moving trajectory and horizon exceeds dataset length
-                self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:])
+            elif end_horizon_idx == -1: # If next timestamp in full horizon is far into the future
+                pass
+                # self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:])
             else: # If current position already in moving trajectory and horizon is within the dataset length
-                self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:end_horizon_idx+1])
+                if start_idx_full_traj == end_horizon_idx:
+                    self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:end_horizon_idx+1][0])
+                else:
+                    self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:end_horizon_idx+1])
 
         # Remove the appended waypoints from the full trajectory
         if len(self._full_trajectory) > 0:
