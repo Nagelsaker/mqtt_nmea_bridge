@@ -227,9 +227,9 @@ class MovingTrajectory:
     
 if __name__ == "__main__":
     time_horizon=300
-    interval=10
-    publish_interval=100
-    sim_speed=100
+    interval=5
+    publish_interval=10
+    sim_speed=1
     remove_uneventful_points=False
     percnt_U_change=0.1
     moving_trajectory_from_dset(time_horizon,
