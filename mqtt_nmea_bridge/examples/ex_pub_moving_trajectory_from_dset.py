@@ -20,7 +20,7 @@ import time
 import copy
 import numpy as np
 
-def moving_trajectory_from_dset(time_horizon=300, interval=10, sim_speed=10, remove_uneventful_points=True, percnt_U_change=0.1, data_path="example_data/example_docking_trajectory.csv"):
+def moving_trajectory_from_dset(time_horizon=300, interval=10, publish_interval=20, sim_speed=10, remove_uneventful_points=True, percnt_U_change=0.1, data_path="example_data/example_docking_trajectory.csv"):
     '''
     Loads a dataset and publishes the trajectory from the dataset to an MQTT broker.
     The current position of the vessel is published every 'interval' seconds, together with a predicted future trajectory 'time_horizon' seconds ahead.
@@ -42,7 +42,8 @@ def moving_trajectory_from_dset(time_horizon=300, interval=10, sim_speed=10, rem
     --------------------------------------------------------------------
     In:
         time_horizon (float): The time horizon (in seconds) for the predicted trajectory.
-        interval (float): The interval at which the current position of the vessel is published.
+        interval (float): The interval between each waypoint in the trajectory.
+        publish_interval (float): The interval at which the trajectory is published.
         sim_speed (float): The speed of the simulation. 1.0 is real-time.
         data_path (str): The path to the dataset.
     --------------------------------------------------------------------
@@ -75,19 +76,26 @@ def moving_trajectory_from_dset(time_horizon=300, interval=10, sim_speed=10, rem
     moving_trajectory = MovingTrajectory(trajectory_dataset, time_horizon, interval)
     print("Publishing moving trajectory from dataset...")
     trajectory_pub.connect(client_id, "password")
+    time.sleep(1)
     trajectory_pub.loop_start()
+    time.sleep(1)
 
-    t = time.time()
-    i = 1
+    t = -10000
+    i = int(publish_interval / interval)
+    i = min(i, len(dataset)-1)
     while len(moving_trajectory) > 0:
         current_time = time.time()
-        if current_time - t >= interval / sim_speed:
+        if current_time - t >= publish_interval / sim_speed:
             t = current_time
             trajectory = moving_trajectory.trajectory
             trajectory_pub.publish(trajectory)
             current_shipstate = dataset[i]
             moving_trajectory.update_moving_trajectory(current_shipstate)
-            i += 1
+            i += int(publish_interval / interval)
+            i = min(i, len(dataset)-1)
+    
+    trajectory_pub.loop_stop()
+    exit()
 
 
 class MovingTrajectory:
@@ -126,7 +134,7 @@ class MovingTrajectory:
 
         --------------------------------------------------------------------
         In:
-            timestamp (float): The timestamp of the current position of the vessel.
+            current_shipstate (lst of floats): The current ship state.
         Out:
             moving_trajectory (lst of lsts of floats): The moving trajectory.
         --------------------------------------------------------------------
@@ -135,6 +143,8 @@ class MovingTrajectory:
         # Optimize the search range in the full trajectory
         # TODO: Implement a more efficient search algorithm
 
+        if len(self._full_trajectory) == 0:
+            return
         # Find the start index from the full trajectory
         start_idx_full_traj = np.where(np.array(self._full_trajectory, dtype=object)[:,0] == timestamp)[0]
         if len(start_idx_full_traj) == 0:
@@ -155,7 +165,7 @@ class MovingTrajectory:
         if len(self._moving_trajectory) == 0:
             start_idx_moving_traj = -1
         else:
-            start_idx_moving_traj = np.where(np.array(self._moving_trajectory, dtype=object)[:,0] >= timestamp)[0]
+            start_idx_moving_traj = np.where(np.array(self._moving_trajectory, dtype=object)[:,0] >= int(timestamp))[0]
             if len(start_idx_moving_traj) == 0:
                 start_idx_moving_traj = -1
             else:
@@ -181,7 +191,7 @@ class MovingTrajectory:
                 if start_idx_full_traj == end_horizon_idx:
                     self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:end_horizon_idx+1][0])
                 else:
-                    self._moving_trajectory.append(self._full_trajectory[start_idx_full_traj:end_horizon_idx+1])
+                    self._moving_trajectory.extend(self._full_trajectory[start_idx_full_traj:end_horizon_idx+1])
 
         # Remove the appended waypoints from the full trajectory
         if len(self._full_trajectory) > 0:
@@ -218,7 +228,14 @@ class MovingTrajectory:
 if __name__ == "__main__":
     time_horizon=300
     interval=10
-    sim_speed=10
-    remove_uneventful_points=True
+    publish_interval=100
+    sim_speed=100
+    remove_uneventful_points=False
     percnt_U_change=0.1
-    moving_trajectory_from_dset(time_horizon, interval, sim_speed, remove_uneventful_points, percnt_U_change)
+    moving_trajectory_from_dset(time_horizon,
+                                interval,
+                                publish_interval,
+                                sim_speed,
+                                remove_uneventful_points,
+                                percnt_U_change,
+                                data_path="example_data/example_trajectory_noisy_model.csv")
