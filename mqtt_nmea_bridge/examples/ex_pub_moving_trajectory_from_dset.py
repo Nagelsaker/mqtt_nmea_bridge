@@ -91,6 +91,7 @@ def moving_trajectory_from_dset(time_horizon=300, interval=10, publish_interval=
             trajectory_pub.publish(trajectory)
             current_shipstate = dataset[i]
             moving_trajectory.update_moving_trajectory(current_shipstate)
+            print(f"Publishing at time {current_shipstate[0]}.")
             i += int(publish_interval / interval)
             i = min(i, len(dataset)-1)
     
@@ -228,8 +229,8 @@ class MovingTrajectory:
 if __name__ == "__main__":
     time_horizon=300
     interval=5
-    publish_interval=10
-    sim_speed=1
+    publish_interval=30
+    sim_speed=10
     remove_uneventful_points=False
     percnt_U_change=0.1
     moving_trajectory_from_dset(time_horizon,
